@@ -14,16 +14,8 @@ public class title : MonoBehaviour
     {
         if (isConnecting) return; // 接続中なら何もしない
         isConnecting = true;
-
-        if (NetworkManager.Singleton.StartHost())
-        {
-            // NGOのSceneManagerを使ってゲーム画面へ
-            NetworkManager.Singleton.SceneManager.LoadScene("Game", LoadSceneMode.Single);
-        }
-        else
-        {
-            isConnecting = false; // 失敗したら再度押せるようにする
-        }
+        NetworkManager.Singleton.StartHost();
+        //NetworkManager.Singleton.SceneManager.LoadScene("Game", LoadSceneMode.Single);
     }
 
     // クライアントとして開始

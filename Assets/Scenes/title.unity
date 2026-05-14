@@ -2269,7 +2269,7 @@ MonoBehaviour:
   m_MaxConnectAttempts: 60
   m_DisconnectTimeoutMS: 30000
   ConnectionData:
-    Address: 192.168.10.171
+    Address: 0.0.0.0
     Port: 7777
     ServerListenAddress: 127.0.0.1
   DebugSimulator:
@@ -2291,7 +2291,7 @@ MonoBehaviour:
   NetworkConfig:
     ProtocolVersion: 0
     NetworkTransport: {fileID: 2089505876}
-    PlayerPrefab: {fileID: 8208899653662686215, guid: 56e01192472e40f4ba90924a60e5b313, type: 3}
+    PlayerPrefab: {fileID: 1616360355374391228, guid: d40baa2fa96f53d4c8aa4a9051631523, type: 3}
     Prefabs:
       NetworkPrefabsLists:
       - {fileID: 11400000, guid: f3bb19747ab3a91459210592f53732ce, type: 2}
