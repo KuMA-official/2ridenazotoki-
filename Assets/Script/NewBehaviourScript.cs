@@ -5,20 +5,26 @@ public class TestSimpleUI : MonoBehaviour
 {
     void OnGUI()
     {
-        // 画面の左上に少し大きめに表示エリアを作る
-        GUILayout.BeginArea(new Rect(20, 20, 250, 200));
+        // 画面の左上に表示エリアを作成
+        GUILayout.BeginArea(new Rect(20, 20, 300, 250));
 
-        // 現在の状態を表示
-        string status = "停止中";
-        if (NetworkManager.Singleton.IsHost) status = "ホスト(親)として動作中";
-        else if (NetworkManager.Singleton.IsClient) status = "クライアント(子)として接続中";
-        else if (NetworkManager.Singleton.IsServer) status = "サーバーとして動作中";
+        // 1. ネットワークの役割を表示
+        string role = "停止中";
+        if (NetworkManager.Singleton.IsHost) role = "ホスト(親)";
+        else if (NetworkManager.Singleton.IsClient) role = "クライアント(子)";
+        
+        GUILayout.Label($"【役割】: {role}");
 
-        GUILayout.Label($"【現在の状態】: {status}");
+        // 2. 接続人数を表示（これが重要！）
+        // サーバー（ホスト）の場合は接続リストの数を、クライアントの場合は自分のみかを確認
+        int connectedCount = NetworkManager.Singleton.ConnectedClientsIds.Count;
+        GUILayout.Label($"【現在の接続人数】: {connectedCount} 人");
+
         GUILayout.Space(10);
 
         if (!NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer)
         {
+            // 未接続時
             if (GUILayout.Button("Host開始 (このPCを親にする)", GUILayout.Height(40)))
             {
                 NetworkManager.Singleton.StartHost();
@@ -30,12 +36,19 @@ public class TestSimpleUI : MonoBehaviour
         }
         else
         {
-            // 接続に成功した時だけ表示
-            if (NetworkManager.Singleton.IsConnectedClient)
+            // 接続動作中
+            if (connectedCount >= 2)
             {
-                GUILayout.Label("✅ 接続成功！パイプは繋がっています。");
+                GUI.color = Color.green;
+                GUILayout.Label("✅ 相手との通信を確認！完璧です！");
+                GUI.color = Color.white;
+            }
+            else
+            {
+                GUILayout.Label("待機中... (相手の接続を待っています)");
             }
             
+            GUILayout.Space(10);
             if (GUILayout.Button("切断する"))
             {
                 NetworkManager.Singleton.Shutdown();
