@@ -51,5 +51,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "2ri-de-nazotoki2022.sln"
+    "dotnet.defaultSolution": "2ridenazotoki-.sln"
 }
