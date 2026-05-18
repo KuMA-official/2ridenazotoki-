@@ -1182,10 +1182,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fcc524610dced7d469517254061c87ba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  addressInput: {fileID: 0}
-  myAddressText: {fileID: 0}
+  addressInput: {fileID: 198350531}
+  myAddressText: {fileID: 1627372740}
   port: 7777
-  nextSceneName: 
+  nextSceneName: Game
 --- !u!4 &782628377
 Transform:
   m_ObjectHideFlags: 0
@@ -1516,7 +1516,7 @@ Transform:
   m_GameObject: {fileID: 1037866190}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.51, y: -7.81, z: -8.39}
+  m_LocalPosition: {x: -0.7698775, y: -2.8720546, z: -12.75}
   m_LocalScale: {x: 11.368, y: 11.368, z: 11.368}
   m_ConstrainProportionsScale: 0
   m_Children:

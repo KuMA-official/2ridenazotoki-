@@ -52,6 +52,7 @@ TemporaryDependencyNodeTargetIdentifier=netstandard2.1
 
 [sourceFiles]
 Assets/Script/
+ NetworkGrabbable.cs
  Player.cs
  title.cs
 Temp/obj/Debug/Assembly-CSharp/.NETStandard,Version=v2.1.AssemblyAttributes.cs

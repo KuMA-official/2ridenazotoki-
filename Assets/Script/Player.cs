@@ -1,7 +1,8 @@
- using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
+
 public class Player : NetworkBehaviour
 {
     [Header("同期させるネットワーク側のパーツ（アバターの見た目）")]
@@ -16,8 +17,19 @@ public class Player : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        // 自分がこのオブジェクトの持ち主（自分自身）である場合のみ実行
         if (IsOwner)
+        {
+            Debug.Log("自分がオーナーのPlayerが生成されました。VRリグの検索を開始します。");
+        }
+    }
+
+    void Update()
+    {
+        // 自分自身でないなら同期処理はNGOに任せる
+        if (!IsOwner) return;
+
+        // --- 修正箇所：VRリグがまだ見つかっていない場合は探す（シーンロード待ち対策） ---
+        if (vrCameraTransform == null || vrLeftHandTransform == null || vrRightHandTransform == null)
         {
             // 1. 頭（カメラ）を探す
             if (Camera.main != null)
@@ -25,47 +37,37 @@ public class Player : NetworkBehaviour
                 vrCameraTransform = Camera.main.transform;
             }
 
-            // 2. MetaのOVRCameraRigをシーン内から探す
+            // 2. MetaのOVRCameraRigを探す
             OVRCameraRig rig = FindObjectOfType<OVRCameraRig>();
-
             if (rig != null)
             {
-                // Meta公式の「Anchor」を同期元としてセット
                 vrLeftHandTransform = rig.leftHandAnchor;
                 vrRightHandTransform = rig.rightHandAnchor;
-                Debug.Log("OVRCameraRigの手を認識しました！");
+                Debug.Log("OVRCameraRigを検出しました！トラッキングを開始します。");
             }
-            else
-            {
-                // もしこれが出るなら、Gameシーンに[BuildingBlock] Camera Rigがない証拠です
-                Debug.LogError("OVRCameraRigが見つかりません。Gameシーンに配置されていますか？");
-            }
-        }
-    }
 
-    void Update()
-    {
-        // 自分自身でない（＝他人の画面に映っている他人）なら、位置の更新はNGO（ClientNetworkTransform）に任せる
-        if (!IsOwner) return;
+            // まだ見つからなければ、ここで処理を止めて次のフレームで再挑戦する
+            if (vrCameraTransform == null || vrLeftHandTransform == null) return;
+        }
 
         // --- 自分のVR機器の動きを、アバターのパーツにコピーする ---
 
         // 頭の同期
-        if (vrCameraTransform != null && networkHead != null)
+        if (networkHead != null)
         {
             networkHead.position = vrCameraTransform.position;
             networkHead.rotation = vrCameraTransform.rotation;
         }
 
         // 左手の同期
-        if (vrLeftHandTransform != null && networkLeftHand != null)
+        if (networkLeftHand != null)
         {
             networkLeftHand.position = vrLeftHandTransform.position;
             networkLeftHand.rotation = vrLeftHandTransform.rotation;
         }
 
         // 右手の同期
-        if (vrRightHandTransform != null && networkRightHand != null)
+        if (networkRightHand != null)
         {
             networkRightHand.position = vrRightHandTransform.position;
             networkRightHand.rotation = vrRightHandTransform.rotation;
