@@ -1,76 +1,72 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using Unity.Netcode;
+using UnityEngine;    
+using Unity.Netcode;  
 
+
+// NetworkBehaviourにすることで、マルチプレイの力が使えるようになります
 public class Player : NetworkBehaviour
 {
     [Header("同期させるネットワーク側のパーツ（アバターの見た目）")]
-    [SerializeField] private Transform networkHead;
-    [SerializeField] private Transform networkLeftHand;
-    [SerializeField] private Transform networkRightHand;
+    [SerializeField] private Transform networkHead;      // 他のプレイヤーからも見える「アバターの頭」パーツ
+    [SerializeField] private Transform networkLeftHand;  // 他のプレイヤーからも見える「アバターの左手」パーツ
+    [SerializeField] private Transform networkRightHand; // 他のプレイヤーからも見える「アバターの右手」パーツ
 
-    // 自分のVR機器（OVRCameraRig）の場所を一時的に覚えさせる変数
-    private Transform vrCameraTransform;
-    private Transform vrLeftHandTransform;
-    private Transform vrRightHandTransform;
+    // --- 【内部の変数：自分のVRゴーグルやコントローラーの「現在の位置」を一時的にメモする箱】 ---
+    private Transform vrCameraTransform;   // 自分のVRゴーグル（頭）の場所
+    private Transform vrLeftHandTransform;  // 自分の左手コントローラーの場所
+    private Transform vrRightHandTransform; // 自分の右手コントローラーの場所
 
-    public override void OnNetworkSpawn()
-    {
-        if (IsOwner)
-        {
-            Debug.Log("自分がオーナーのPlayerが生成されました。VRリグの検索を開始します。");
-        }
-    }
 
     void Update()
     {
-        // 自分自身でないなら同期処理はNGOに任せる
+        // 【超重要】もしこのキャラクターが「自分自身の体」じゃないなら、ここで処理を終了する！
+        // （他人の動きはNGOの「NetworkTransform」などが自動で同期してくれるので、上書きしないようにします）
         if (!IsOwner) return;
 
-        // --- 修正箇所：VRリグがまだ見つかっていない場合は探す（シーンロード待ち対策） ---
+        // --- 【VR機器（OVRCameraRig）がシーン内からまだ見つかっていない場合の検索処理】 ---
+        // タイトル画面からゲーム画面へ切り替わった直後は、VRの準備が遅れて見つからないことがある（ロード待ち対策）
         if (vrCameraTransform == null || vrLeftHandTransform == null || vrRightHandTransform == null)
         {
-            // 1. 頭（カメラ）を探す
+            // 1. 画面のメインカメラ（＝自分が被っているVRゴーグル）を探して箱に入れる
             if (Camera.main != null)
             {
                 vrCameraTransform = Camera.main.transform;
             }
 
-            // 2. MetaのOVRCameraRigを探す
+            // 2. Meta Questの本体システム（OVRCameraRig）をシーン全体から探し出す
             OVRCameraRig rig = FindObjectOfType<OVRCameraRig>();
             if (rig != null)
             {
+                // 見つかったら、その中にある「左手のアンカー」と「右手のアンカー」の場所をそれぞれの箱にメモする
                 vrLeftHandTransform = rig.leftHandAnchor;
                 vrRightHandTransform = rig.rightHandAnchor;
-                Debug.Log("OVRCameraRigを検出しました！トラッキングを開始します。");
             }
 
-            // まだ見つからなければ、ここで処理を止めて次のフレームで再挑戦する
+            // もし「頭」か「左手」のどちらかがまだ見つかっていなければ、今フレームの同期は諦めてここで処理を終了する
+            // （次のフレームで、見つかるまで何度も探し直します）
             if (vrCameraTransform == null || vrLeftHandTransform == null) return;
         }
 
-        // --- 自分のVR機器の動きを、アバターのパーツにコピーする ---
+        // --- 【同期の本番：自分のVR機器のリアルタイムな動きを、アバターのパーツに毎フレーム強制コピーする】 ---
 
-        // 頭の同期
+        // 1. 頭（ゴーグル）の同期
         if (networkHead != null)
         {
-            networkHead.position = vrCameraTransform.position;
-            networkHead.rotation = vrCameraTransform.rotation;
+            networkHead.position = vrCameraTransform.position; // 自分の頭の位置をアバターにコピー
+            networkHead.rotation = vrCameraTransform.rotation; // 自分の頭の向きをアバターにコピー
         }
 
-        // 左手の同期
+        // 2. 左手コントローラーの同期
         if (networkLeftHand != null)
         {
-            networkLeftHand.position = vrLeftHandTransform.position;
-            networkLeftHand.rotation = vrLeftHandTransform.rotation;
+            networkLeftHand.position = vrLeftHandTransform.position; // 自分の左手の位置をアバターにコピー
+            networkLeftHand.rotation = vrLeftHandTransform.rotation; // 自分の左手の向きをアバターにコピー
         }
 
-        // 右手の同期
+        // 3. 右手コントローラーの同期
         if (networkRightHand != null)
         {
-            networkRightHand.position = vrRightHandTransform.position;
-            networkRightHand.rotation = vrRightHandTransform.rotation;
+            networkRightHand.position = vrRightHandTransform.position; // 自分の右手の位置をアバターにコピー
+            networkRightHand.rotation = vrRightHandTransform.rotation; // 自分の右手の向きをアバターにコピー
         }
     }
 }

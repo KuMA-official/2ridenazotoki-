@@ -1,202 +1,104 @@
-using UnityEngine;
-using UnityEngine.SceneManagement;
-using TMPro;
-using Unity.Netcode;
-using Unity.Netcode.Transports.UTP;
-using System.Net;
-using System.Net.Sockets;
-using System.Net.NetworkInformation;
+using UnityEngine;                  // Unityの基本機能（MonoBehaviourなど）を使うための準備
+using UnityEngine.SceneManagement;  // シーンの切り替え（LoadSceneなど）をするための準備
+using TMPro;                        // TextMeshPro（文字を表示・入力するUI）を使うための準備
+using Unity.Netcode;                // マルチプレイの要である「NGO」を使うための準備
+using Unity.Netcode.Transports.UTP; // NGOの裏で動く通信の仕組み「UTP」をいじるための準備
+using System.Net;                   // Dns（IPを探す機能）を使うための準備
+using System.Net.Sockets;           // IPアドレスの種類（IPv4かどうかなど）を判別するための準備
 
-public class title : MonoBehaviour
+public class Title : MonoBehaviour
 {
-    [Header("入力フィールド（接続先アドレス）")]
+    [Header("--- UI References ---")]
+    [Tooltip("接続先のIPアドレスを入力するフィールド。空欄の場合はホストとして起動します。")]
     public TMP_InputField addressInput;
+    // Unity内でtitlescenes上にcanveで置いてある。クライアントで入るときはここにホスト側のUnity上でのIPアドレスを入力。
 
-    [Header("自身のアドレス表示用")]
+    [Tooltip("自分自身のローカルIPアドレスを表示するためのテキストUI。")]
     public TextMeshProUGUI myAddressText;
+    // 上のunity上でのIPアドレスはこれ、pc本体のとは異なるので注意。
 
-    [Header("接続設定")]
+    [Header("--- Connection Settings ---")]
+    [Tooltip("通信に使用するポート番号。ルーターのポート開放やファイアウォールの許可が必要です。")]
     public ushort port = 7777;
-
-    [Header("遷移先")]
-    public string nextSceneName;
-
-    private UnityTransport transport;
-    
-    // 二重押しを防止するためのフラグ
-    private bool isConnecting = false;
+    // 基本変えない
 
     void Start()
     {
-        transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
-        if (transport == null)
-        {
-            Debug.LogError("NetworkManagerにUnityTransportがアタッチされていません。");
-        }
-        else
-        {
-            Debug.Log("UnityTransportを検出しました。");
-        }
-
-        // 起動時に「候補となるローカルIP」をすべて取得してUIに表示する
-        string localIPs = GetAllLocalIPAddresses();
+        // 起動時にUnity上のIPアドレスを取得してテキストUIに表示する
         if (myAddressText != null)
         {
-            myAddressText.text = "Your Addresses:\n" + localIPs;
+            myAddressText.text = "Your IP:\n" + GetUnityLocalIP();
         }
     }
 
-    private void Update()
+    void Update()
     {
-        // すでに接続済み、または接続処理中ならボタン入力を無視する
-        if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer || isConnecting)
-        {
-            return;
-        }
-
-        // PCデバッグ用ショートカットキー
-        if (Input.GetKeyDown(KeyCode.H))
-        {
-            Debug.Log("Hキー押下：ホストを開始します");
-            StartHost();
-        }
-        else if (Input.GetKeyDown(KeyCode.C))
-        {
-            Debug.Log("Cキー押下：クライアントを開始します");
-            StartClient();
-        }
-
         // VR用 (QuestのA/Bボタン)
-        if (OVRInput.GetDown(OVRInput.RawButton.A))
-        {
-            Debug.Log("Aボタン押下：ホストを開始します");
-            StartHost();
-        }
-        if (OVRInput.GetDown(OVRInput.RawButton.B))
-        {
-            Debug.Log("Bボタン押下：クライアントを開始します");
-            StartClient();
-        }
+        if (OVRInput.GetDown(OVRInput.RawButton.A)) StartHost();
+        if (OVRInput.GetDown(OVRInput.RawButton.B)) StartClient();
     }
 
-    // --- UIのボタンから呼び出されるメソッド ---
-    public void OnConnectButtonPressed()
+    public void StartHost()
     {
-        if (isConnecting) return;
-
-        string inputAddress = addressInput != null ? addressInput.text.Trim() : "";
-
-        if (string.IsNullOrEmpty(inputAddress))
-        {
-            Debug.Log("IPアドレスが未入力のため、ホストとして起動します。");
-            StartHost();
-        }
-        else
-        {
-            Debug.Log($"IPアドレスが入力されているため、クライアントとして接続します。接続先: {inputAddress}");
-            StartClient();
-        }
+        ApplyAddress(true); // ホスト用のIP設定を適用
+        NetworkManager.Singleton.StartHost();
+        NetworkManager.Singleton.SceneManager.LoadScene("Game", LoadSceneMode.Single);
+        //ここのGameはScenes名
     }
 
+    public void StartClient()
+    {
+        ApplyAddress(false); // クライアント用のIP設定を適用
+        NetworkManager.Singleton.StartClient();
+    }
+
+    // --- 【裏方の仕事①：通信先の設定（IPとポート）を適用する関数】 ---
+    // isHost が true ならホスト用、false ならクライアント用の設定にする
     private void ApplyAddress(bool isHost)
     {
-        if (transport == null) return;
+        // NetworkManagerにくっついている「UnityTransport（通信の配達員）」を取得する
+        var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
 
-        string inputAddress = addressInput != null ? addressInput.text.Trim() : "";
+        // 配達員に「ポート番号はこれを使ってね」と教える
+        transport.ConnectionData.Port = port;
 
         if (isHost)
         {
-            // ホストは自分自身に接続するため 127.0.0.1 で固定
+            // 自分自身（127.0.0.1）をホストの住所に設定する
             transport.ConnectionData.Address = "127.0.0.1";
-            transport.ConnectionData.Port = port;
+            // 「0.0.0.0」にすることで、他のどんなIPからの接続も受け入れる（Listen）状態にする
             transport.ConnectionData.ServerListenAddress = "0.0.0.0";
-            Debug.Log($"ホスト設定完了：Listen=127.0.0.1:{port} / serverListenAddress=0.0.0.0");
+            // これは他からの接続を待ち受ける設定
         }
         else
         {
-            // クライアント用設定
-            string connectTo = !string.IsNullOrEmpty(inputAddress) ? inputAddress : "127.0.0.1";
-            transport.ConnectionData.Address = connectTo;
-            transport.ConnectionData.Port = port;
-            Debug.Log($"クライアント設定完了：接続先={connectTo}:{port}");
+            // 入力枠の文字を取得する
+            string inputAddress = addressInput != null ? addressInput.text.Trim() : "";
+            // もし入力されていればそのIPを、空っぽならテスト用に「127.0.0.1（自分自身）」を接続先に設定する
+            transport.ConnectionData.Address = !string.IsNullOrEmpty(inputAddress) ? inputAddress : "127.0.0.1";
         }
     }
 
-    private string GetAllLocalIPAddresses()
+    // --- Unity（Netcode）が認識しているIPアドレスを探し出す処理 ---
+    private string GetUnityLocalIP()
     {
-        string ipList = "";
-        try
-        {
-            foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
-            {
-                if (ni.OperationalStatus == OperationalStatus.Up && ni.NetworkInterfaceType != NetworkInterfaceType.Loopback)
-                {
-                    string name = ni.Name.ToLower();
-                    string desc = ni.Description.ToLower();
-                    
-                    // 仮想アダプタを除外
-                    if (name.Contains("virtual") || desc.Contains("virtual") ||
-                        name.Contains("vpn") || desc.Contains("vpn") ||
-                        name.Contains("vethernet") || name.Contains("tailscale") || 
-                        name.Contains("zerotier") || name.Contains("wsl"))
-                    {
-                        continue;
-                    }
+        // 【修正】もし見つからなかった時の保険として、初期値を「127.0.0.1」にしておく
+        string localIP = "127.0.0.1";
 
-                    foreach (UnicastIPAddressInformation ip in ni.GetIPProperties().UnicastAddresses)
-                    {
-                        if (ip.Address.AddressFamily == AddressFamily.InterNetwork)
-                        {
-                            string ipStr = ip.Address.ToString();
-                            if (ipStr.StartsWith("169.254.")) continue;
-                            ipList += $"{ipStr} ({ni.Name})\n"; 
-                        }
-                    }
-                }
+        // Dns.GetHostAddresses を使った一番シンプルなIP取得方法
+        // 自分のPC（ホストネーム）が持っているすべてのアドレスをDns経由でリストアップし、1つずつ確認する
+        foreach (var ip in Dns.GetHostAddresses(Dns.GetHostName()))
+        {
+            // そのアドレスの形式が「IPv4（普通のIPアドレス形式）」だったら…
+            if (ip.AddressFamily == AddressFamily.InterNetwork)
+            {
+                // 見つけたIPを文字に変換して、localIPという箱に入れる
+                localIP = ip.ToString();
+                break; // 最初に見つけたIPv4を返す
             }
         }
-        catch
-        {
-            Debug.LogWarning("ローカルIPアドレスの取得に失敗しました。");
-        }
         
-        return string.IsNullOrEmpty(ipList) ? "127.0.0.1" : ipList.TrimEnd();
-    }
-
-    private void StartHost()
-    {
-        if (isConnecting) return;
-        isConnecting = true;
-
-        ApplyAddress(true);
-        if (NetworkManager.Singleton.StartHost())
-        {
-            Debug.Log("ホストを開始しました。");
-            NetworkManager.Singleton.SceneManager.LoadScene("Game", LoadSceneMode.Single);
-        }
-        else
-        {
-            Debug.LogError("ホストの起動に失敗しました。");
-            isConnecting = false; // 失敗したら再度押せるようにする
-        }
-    }
-
-    private void StartClient()
-    {
-        if (isConnecting) return;
-        isConnecting = true;
-
-        ApplyAddress(false);
-        if (NetworkManager.Singleton.StartClient())
-        {
-            Debug.Log("クライアント接続開始。");
-            // クライアントの場合、成功したかどうかは OnClientConnectedCallback 等で判断するため
-            // 接続に時間がかかる場合のタイムアウト処理などは別途必要になることがあります
-        }
-        else
-        {
-            Debug.LogError("クライアント接続に失敗しました。");
-            isConnecting = false; // 失敗したら再度押せるようにする
-        }
+        // 見つかったIPアドレス（文字）を、この関数を呼んだ人に「はい、これ！」と渡す（返す）
+        return localIP;
     }
 }
