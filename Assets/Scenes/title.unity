@@ -1185,7 +1185,6 @@ MonoBehaviour:
   addressInput: {fileID: 198350531}
   myAddressText: {fileID: 1627372740}
   port: 7777
-  nextSceneName: Game
 --- !u!4 &782628377
 Transform:
   m_ObjectHideFlags: 0
