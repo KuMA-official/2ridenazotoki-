@@ -47,11 +47,18 @@ public class BucketController : NetworkBehaviour
     /// <summary>
     /// 当たり判定に入った時（水に触れた / 暖炉エリアに入った）
     /// </summary>
-
-
     private void OnTriggerEnter(Collider other)
     {
-        // ...
+        if (!IsServer) return;
+
+        // 【１】水に接触した場合：バケツが空なら満水にする
+        if (other.CompareTag(waterTag) && !isFull.Value)
+        {
+            isFull.Value = true;
+            Debug.Log("バケツに水が入りました！");
+        }
+
+        // 【２】暖炉エリアに入った場合：その暖炉スクリプトを記憶しておく
         Fireplace fireplace = other.GetComponent<Fireplace>();
         if (fireplace != null)
         {
@@ -64,7 +71,9 @@ public class BucketController : NetworkBehaviour
     /// </summary>
     private void OnTriggerExit(Collider other)
     {
-        // ...
+        if (!IsServer) return;
+
+        // 暖炉エリアから出たら記憶を消す
         Fireplace fireplace = other.GetComponent<Fireplace>();
         if (fireplace != null && fireplace == currentFireplaceArea)
         {
@@ -87,3 +96,4 @@ public class BucketController : NetworkBehaviour
         }
     }
 }
+
