@@ -3,6 +3,7 @@ using UnityEngine.SceneManagement;  // シーンの切り替え（LoadSceneな�
 using TMPro;                        // TextMeshPro（文字を表示・入力するUI）を使うための準備
 using Unity.Netcode;                // マルチプレイの要である「NGO」を使うための準備
 using Unity.Netcode.Transports.UTP; // NGOの裏で動く通信の仕組み「UTP」をいじるための準備
+using System;
 using System.Net;                   // Dns（IPを探す機能）を使うための準備
 using System.Net.Sockets;           // IPアドレスの種類（IPv4かどうかなど）を判別するための準備
 
@@ -79,26 +80,35 @@ public class Title : MonoBehaviour
         }
     }
 
-    // --- Unity（Netcode）が認識しているIPアドレスを探し出す処理 ---
+    // --- 【修正版】現在アクティブなネットワーク（Wi-Fi/LAN）のIPアドレスを確実に取得する処理 ---
     private string GetUnityLocalIP()
     {
-        // 【修正】もし見つからなかった時の保険として、初期値を「127.0.0.1」にしておく
-        string localIP = "127.0.0.1";
-
-        // Dns.GetHostAddresses を使った一番シンプルなIP取得方法
-        // 自分のPC（ホストネーム）が持っているすべてのアドレスをDns経由でリストアップし、1つずつ確認する
-        foreach (var ip in Dns.GetHostAddresses(Dns.GetHostName()))
+        try
         {
-            // そのアドレスの形式が「IPv4（普通のIPアドレス形式）」だったら…
-            if (ip.AddressFamily == AddressFamily.InterNetwork)
+            // UDPソケットを作成してアクティブなネットワークアダプターのIPを判定する（ダミー接続）
+            using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0))
             {
-                // 見つけたIPを文字に変換して、localIPという箱に入れる
-                localIP = ip.ToString();
-                break; // 最初に見つけたIPv4を返す
+                socket.Connect("8.8.8.8", 65530);
+                IPEndPoint endPoint = socket.LocalEndPoint as IPEndPoint;
+                if (endPoint != null)
+                {
+                    return endPoint.Address.ToString(); // Wi-Fi等で実際に使われている192.168.x.xなどが取得できる
+                }
             }
         }
-        
-        // 見つかったIPアドレス（文字）を、この関数を呼んだ人に「はい、これ！」と渡す（返す）
-        return localIP;
+        catch
+        {
+            // ソケットでの取得に失敗した場合は予備（フォールバック）で従来のDns検索を行う
+            foreach (var ip in Dns.GetHostAddresses(Dns.GetHostName()))
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    return ip.ToString();
+                }
+            }
+        }
+
+        // どこからも取れなかった場合の初期値
+        return "127.0.0.1";
     }
 }
