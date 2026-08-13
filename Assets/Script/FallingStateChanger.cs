@@ -9,18 +9,35 @@ public class FallingStateChanger : NetworkBehaviour
     [Header("この高さを下回ったら変化する (Y座標)")]
     public float thresholdY = -2.0f;
 
+    [Header("SE設定")]
+    [SerializeField] private AudioClip dropSound; // 鳴らしたい音声ファイル(.wavや.mp3)
+
     // 重複して処理が走るのを防ぐためのフラグ
     private bool isChanged = false;
 
     void Update()
     {
-        // 判定はサーバー（ホスト）のPCだけで行う（全員がやると何個も生成されてしまうため）
+        // 判定はサーバー（ホスト）のPCだけで行う
         if (!IsServer || isChanged) return;
 
         // Y座標が設定した高さを下回ったかチェック
         if (transform.position.y < thresholdY)
         {
+            // 全員の画面で変化音を鳴らす（消滅対策済みのRPC呼び出し）
+            PlaySoundClientRpc(transform.position);
+
             ChangeBlock();
+        }
+    }
+
+    // 全プレイヤーの画面で音を鳴らす命令
+    [ClientRpc]
+    private void PlaySoundClientRpc(Vector3 soundPosition)
+    {
+        if (dropSound != null)
+        {
+            // オブジェクト本体がDespawnして消えても、その場所に臨時スピーカーを作って最後まで鳴らしてくれる機能
+            AudioSource.PlayClipAtPoint(dropSound, soundPosition);
         }
     }
 
