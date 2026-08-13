@@ -50,7 +50,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 4252163195
+  GlobalObjectIdHash: 128471544
   InScenePlacedSourceGlobalObjectIdHash: 1753744391
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -94,8 +94,6 @@ MonoBehaviour:
   - {fileID: 748122340792189614}
   - {fileID: 5166617463308180582}
   physicalDuration: 5
-  handColliders: []
-  grabInteractors: []
 --- !u!1 &5403717678020427846
 GameObject:
   m_ObjectHideFlags: 0
@@ -487,7 +485,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1735459127276190137, guid: d45c5b042b877984dac13812be84f0f2, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.19
+      value: 1.406
       objectReference: {fileID: 0}
     - target: {fileID: 1735459127276190137, guid: d45c5b042b877984dac13812be84f0f2, type: 3}
       propertyPath: m_LocalPosition.y
@@ -495,7 +493,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1735459127276190137, guid: d45c5b042b877984dac13812be84f0f2, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -2.54
+      value: 1.14
       objectReference: {fileID: 0}
     - target: {fileID: 1735459127276190137, guid: d45c5b042b877984dac13812be84f0f2, type: 3}
       propertyPath: m_LocalRotation.w
