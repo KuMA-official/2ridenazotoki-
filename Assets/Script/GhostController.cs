@@ -14,7 +14,7 @@ public class GhostController : NetworkBehaviour
     [Header("実体化（物理干渉）設定")]
     [SerializeField] private float physicalDuration = 5.0f;
 
-    // 手の全センサー（Collider）と全掴み機能（Interactor）のキャッシュリスト
+    // 手の全センサー（Collider）と掴み機能（Interactor）のキャッシュリスト
     private List<Behaviour> cachedInteractors = new List<Behaviour>();
     private List<Collider> cachedColliders = new List<Collider>();
 
@@ -27,10 +27,10 @@ public class GhostController : NetworkBehaviour
 
         if (IsOwner)
         {
-            // 1. 手の中にある全センサーと全掴みスクリプトを自動検出して記憶する
+            // 1. 手の中にある掴み系機能だけを自動検出（視点操作系は除外）
             CacheAllHandInteractors();
 
-            // 2. スタート時は非実体化（全センサー＆全掴み機能をOFF）にする
+            // 2. スタート時は非実体化（掴み機能をOFF）
             SetPhysicalState(false);
         }
         else
@@ -49,7 +49,7 @@ public class GhostController : NetworkBehaviour
     }
 
     /// <summary>
-    /// LeftInteractions / RightInteractions 配下にあるすべての Interactor と Collider を検索・保存
+    /// LeftInteractions / RightInteractions 配下から「掴み機能」だけを抽出する
     /// </summary>
     private void CacheAllHandInteractors()
     {
@@ -66,19 +66,30 @@ public class GhostController : NetworkBehaviour
                 var cols = obj.GetComponentsInChildren<Collider>(true);
                 cachedColliders.AddRange(cols);
 
-                // 配下にあるすべての Interactor スクリプトを取得
+                // 配下にある Interactor スクリプトを取得
                 var behaviours = obj.GetComponentsInChildren<Behaviour>(true);
                 foreach (var b in behaviours)
                 {
-                    if (b != null && b.GetType().Name.Contains("Interactor"))
+                    if (b != null)
                     {
-                        cachedInteractors.Add(b);
+                        string typeName = b.GetType().Name;
+                        string objName = b.gameObject.name;
+
+                        // "Interactor" を含むが、視点・移動系（Locomotion / Turn / Rotate / Scroll）は除外する
+                        bool isInteractor = typeName.Contains("Interactor");
+                        bool isLocomotion = typeName.Contains("Locomotion") || typeName.Contains("Turn") || typeName.Contains("Rotate")
+                                         || objName.Contains("Locomotion") || objName.Contains("Turn") || objName.Contains("Rotate") || objName.Contains("Scroll");
+
+                        if (isInteractor && !isLocomotion)
+                        {
+                            cachedInteractors.Add(b);
+                        }
                     }
                 }
             }
         }
 
-        Debug.Log($"[GhostController] 検出完了: センサー(Collider) {cachedColliders.Count}個 / 掴み機能(Interactor) {cachedInteractors.Count}個");
+        Debug.Log($"[GhostController] 検出完了: 掴み用センサー {cachedColliders.Count}個 / 掴み機能 {cachedInteractors.Count}個（※視点操作は保護済み）");
     }
 
     private void Update()
@@ -109,25 +120,25 @@ public class GhostController : NetworkBehaviour
     private IEnumerator ActivatePhysicalMode()
     {
         isPhysical = true;
-        SetPhysicalState(true); // ★実体化：全センサー＆掴み機能を一括ON！
+        SetPhysicalState(true); // ★実体化：掴み機能をON！
         Debug.Log($"幽霊が実体化しました！（{physicalDuration}秒間触れます）");
 
         yield return new WaitForSeconds(physicalDuration);
 
-        SetPhysicalState(false); // ★非実体化：全センサー＆掴み機能を一括OFF！
+        SetPhysicalState(false); // ★非実体化：掴み機能をOFF！
         isPhysical = false;
         Debug.Log("幽霊の実体化が解除されました。");
     }
 
     private void SetPhysicalState(bool state)
     {
-        // 1. すべての掴み用コライダー（センサー）をON/OFF
+        // 1. 掴み用コライダー（センサー）のON/OFF
         foreach (var col in cachedColliders)
         {
             if (col != null) col.enabled = state;
         }
 
-        // 2. すべての Interactor スクリプトをON/OFF
+        // 2. 掴み系 Interactor スクリプトのON/OFF
         foreach (var interactor in cachedInteractors)
         {
             if (interactor != null) interactor.enabled = state;
