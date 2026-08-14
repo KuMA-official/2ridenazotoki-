@@ -339,4 +339,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   newBlockPrefab: {fileID: 5192778107497747261, guid: f39a203b54f780a47bcd1e372c171c55, type: 3}
-  thresholdY: 0
+  thresholdY: 0.5
+  dropSound: {fileID: 8300000, guid: 68da68a5584080e40ba12dcd786f4595, type: 3}
