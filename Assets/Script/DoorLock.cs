@@ -3,8 +3,13 @@ using UnityEngine;
 
 public class DoorLock : NetworkBehaviour
 {
-    [Header("ロック解除するコンポーネント（Door_tugaiのGrabInteractable）")]
+    [Header("ロック設定")]
+    [Tooltip("ロック解除するコンポーネント（Door_tugaiのGrabInteractable）")]
     public Behaviour targetGrabInteractable;
+
+    [Header("鍵の設定")]
+    [Tooltip("このドアを開けるために必要な鍵のタグ名（例: Key_1, Key_2 等）")]
+    public string requiredKeyTag = "Key_1";
 
     // ドアが開いているかどうかを全員に自動同期する変数
     private NetworkVariable<bool> isUnlocked = new NetworkVariable<bool>(
@@ -27,8 +32,8 @@ public class DoorLock : NetworkBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        // 鍵判定（サーバー/ホスト側のみで処理）
-        if (other.CompareTag("Key_1"))
+        // インスペクターで設定したタグ（requiredKeyTag）と一致するか判定
+        if (!string.IsNullOrEmpty(requiredKeyTag) && other.CompareTag(requiredKeyTag))
         {
             // 1. 鍵の「当たり判定（Collider）」を即座に消して透明な壁を防ぐ
             Collider keyCollider = other.GetComponent<Collider>();
@@ -41,10 +46,10 @@ public class DoorLock : NetworkBehaviour
             Rigidbody keyRb = other.GetComponent<Rigidbody>();
             if (keyRb != null) keyRb.isKinematic = true;
 
-            // 3. 鍵穴のセンサーをオフにする
+            // 3. この鍵穴のセンサーをオフにして連動を防ぐ
             GetComponent<Collider>().enabled = false;
 
-            // 4. サーバーに鍵開けを通知（全クライアントに同期される）
+            // 4. サーバーに鍵開けを通知（全クライアントに同期）
             UnlockDoorServerRpc();
         }
     }
@@ -60,7 +65,7 @@ public class DoorLock : NetworkBehaviour
         if (targetGrabInteractable != null)
         {
             targetGrabInteractable.enabled = newValue;
-            Debug.Log("[DoorLock] 全員の画面でドアのロックが解除されました！");
+            Debug.Log($"[DoorLock] タグ「{requiredKeyTag}」の鍵でドアのロックが解除されました！");
         }
     }
 }
