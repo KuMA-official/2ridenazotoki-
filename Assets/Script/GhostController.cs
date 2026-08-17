@@ -97,13 +97,13 @@ public class GhostController : NetworkBehaviour
         if (!IsOwner) return;
 
         // Bボタン：本
-        if (OVRInput.GetDown(OVRInput.Button.Two) || Input.GetKeyDown(KeyCode.B))
+        if (OVRInput.GetDown(OVRInput.RawButton.B) || Input.GetKeyDown(KeyCode.B))
         {
             ToggleGhostBook();
         }
 
         // Aボタン：実体化
-        if (OVRInput.GetDown(OVRInput.Button.One) || Input.GetKeyDown(KeyCode.A))
+        if (OVRInput.GetDown(OVRInput.RawButton.A) || Input.GetKeyDown(KeyCode.A))
         {
             if (isPhysical) return;
 
@@ -114,7 +114,18 @@ public class GhostController : NetworkBehaviour
 
     private void ToggleGhostBook()
     {
-        if (ghostBook != null) ghostBook.SetActive(!ghostBook.activeSelf);
+        if (ghostBook != null)
+        {
+            ghostBook.SetActive(!ghostBook.activeSelf);
+            
+            // ★詳細なデバッグログを表示
+            Debug.Log($"[bookの状態] 単体のスイッチ: {ghostBook.activeSelf} / 実際の画面表示: {ghostBook.activeInHierarchy}");
+        }
+        else
+        {
+            // ★割当が切れている場合のエラー表示
+            Debug.LogError("★ ghostBook が Inspector で割り当てられていません！");
+        }
     }
 
     private IEnumerator ActivatePhysicalMode()
