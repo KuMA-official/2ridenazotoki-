@@ -22,7 +22,7 @@ GameObject:
   - component: {fileID: 2439961831734849093}
   - component: {fileID: -646527347897546786}
   m_Layer: 0
-  m_Name: Cube
+  m_Name: Cube 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -126,7 +126,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3651542743
+  GlobalObjectIdHash: 1967279739
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -339,6 +339,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   newBlockPrefabs:
-  - {fileID: 5192778107497747261, guid: f39a203b54f780a47bcd1e372c171c55, type: 3}
+  - {fileID: 5192778107497747261, guid: 87ba5b875331f634ba798ff5c44ebec8, type: 3}
+  - {fileID: 5071049584289940753, guid: d66b822a53ee402468638f5df4fbe565, type: 3}
   thresholdY: 0.5
   dropSound: {fileID: 8300000, guid: 68da68a5584080e40ba12dcd786f4595, type: 3}

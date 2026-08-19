@@ -1,10 +1,12 @@
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
 public class FallingStateChanger : NetworkBehaviour
 {
-    [Header("変化後の新しいプレハブ")]
-    public GameObject newBlockPrefab;
+    [Header("変化後の新しいプレハブ（複数設定可能）")]
+    [Tooltip("インスペクターの右下の + ボタンで枠を増やし、出したいプレハブをそれぞれ設定します")]
+    public List<GameObject> newBlockPrefabs = new List<GameObject>();
 
     [Header("この高さを下回ったら変化する (Y座標)")]
     public float thresholdY = -2.0f;
@@ -23,7 +25,7 @@ public class FallingStateChanger : NetworkBehaviour
         // Y座標が設定した高さを下回ったかチェック
         if (transform.position.y < thresholdY)
         {
-            // 全員の画面で変化音を鳴らす（消滅対策済みのRPC呼び出し）
+            // 全員の画面で変化音を鳴らす
             PlaySoundClientRpc(transform.position);
 
             ChangeBlock();
@@ -36,7 +38,6 @@ public class FallingStateChanger : NetworkBehaviour
     {
         if (dropSound != null)
         {
-            // オブジェクト本体がDespawnして消えても、その場所に臨時スピーカーを作って最後まで鳴らしてくれる機能
             AudioSource.PlayClipAtPoint(dropSound, soundPosition);
         }
     }
@@ -45,14 +46,24 @@ public class FallingStateChanger : NetworkBehaviour
     {
         isChanged = true;
 
-        // 1. 新しいプレハブを今の位置・回転で生成する
-        GameObject newBlock = Instantiate(newBlockPrefab, transform.position, transform.rotation);
-
-        // 2. 新しいプレハブをネットワーク上の全プレイヤーに同期（Spawn）する
-        NetworkObject netObj = newBlock.GetComponent<NetworkObject>();
-        if (netObj != null)
+        // リストに登録された数の分だけ順番に生成する
+        foreach (GameObject prefab in newBlockPrefabs)
         {
-            netObj.Spawn();
+            if (prefab == null) continue; // 空欄(None)があった場合はスキップする
+
+            // 物理演算で重なって爆発（反発）しないように、少しだけ位置を散らす
+            Vector3 randomOffset = new Vector3(Random.Range(-0.2f, 0.2f), Random.Range(0f, 0.5f), Random.Range(-0.2f, 0.2f));
+            Vector3 spawnPosition = transform.position + randomOffset;
+
+            // 1. 新しいプレハブを少しずらした位置・元の回転で生成する
+            GameObject newBlock = Instantiate(prefab, spawnPosition, transform.rotation);
+
+            // 2. 新しいプレハブをネットワーク上の全プレイヤーに同期（Spawn）する
+            NetworkObject netObj = newBlock.GetComponent<NetworkObject>();
+            if (netObj != null)
+            {
+                netObj.Spawn();
+            }
         }
 
         // 3. 自分自身（古いブロック）をネットワークから完全に消去する
