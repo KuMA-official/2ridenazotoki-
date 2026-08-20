@@ -15,58 +15,94 @@ public class FallingStateChanger : NetworkBehaviour
     [SerializeField] private AudioClip dropSound; // 鳴らしたい音声ファイル(.wavや.mp3)
 
     // 重複して処理が走るのを防ぐためのフラグ
-    private bool isChanged = false;
+    private NetworkVariable<bool> isChanged = new NetworkVariable<bool>(false);
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+
+        // 1. フラグが変わった時に全員の画面で切り替えるイベントを登録
+        isChanged.OnValueChanged += OnStateChanged;
+
+        // 2. 初期状態を確実に適用する
+        OnStateChanged(false, isChanged.Value);
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        base.OnNetworkDespawn();
+        isChanged.OnValueChanged -= OnStateChanged;
+    }
+
+    // 全員のPCで状態が変わった時に呼ばれる処理
+    private void OnStateChanged(bool previousValue, bool newValue)
+    {
+        if (newValue)
+        {
+            // 1. 割れたオブジェクト（newBlockPrefabs）をすべてアクティブ化
+            foreach (GameObject prefab in newBlockPrefabs)
+            {
+                if (prefab == null) continue;
+                prefab.SetActive(true);
+
+                // Rigidbodyがついている（＝飛び散る破片）なら、親子関係を解除して置き去りにする
+                Rigidbody[] rbs = prefab.GetComponentsInChildren<Rigidbody>();
+                if (rbs.Length > 0)
+                {
+                    prefab.transform.SetParent(null);
+                }
+            }
+
+            // 2. 元のオブジェクトの見た目と当たり判定を消す
+            var renderers = GetComponentsInChildren<Renderer>();
+            foreach (var r in renderers)
+            {
+                // newBlockPrefabs 配下の要素は消さないよう判定
+                bool isDebris = false;
+                foreach (var p in newBlockPrefabs)
+                {
+                    if (p != null && r.transform.IsChildOf(p.transform)) isDebris = true;
+                }
+                if (!isDebris) r.enabled = false;
+            }
+
+            var colliders = GetComponentsInChildren<Collider>();
+            foreach (var c in colliders)
+            {
+                bool isDebris = false;
+                foreach (var p in newBlockPrefabs)
+                {
+                    if (p != null && c.transform.IsChildOf(p.transform)) isDebris = true;
+                }
+                if (!isDebris) c.enabled = false;
+            }
+
+            // 3. 全員の画面で変化音を鳴らす
+            if (dropSound != null)
+            {
+                AudioSource.PlayClipAtPoint(dropSound, transform.position);
+            }
+        }
+        else
+        {
+            // 初期状態：変化後のオブジェクトを非アクティブにしておく
+            foreach (GameObject prefab in newBlockPrefabs)
+            {
+                if (prefab == null) continue;
+                prefab.SetActive(false);
+            }
+        }
+    }
 
     void Update()
     {
         // 判定はサーバー（ホスト）のPCだけで行う
-        if (!IsServer || isChanged) return;
+        if (!IsServer || isChanged.Value) return;
 
         // Y座標が設定した高さを下回ったかチェック
         if (transform.position.y < thresholdY)
         {
-            // 全員の画面で変化音を鳴らす
-            PlaySoundClientRpc(transform.position);
-
-            ChangeBlock();
+            isChanged.Value = true;
         }
-    }
-
-    // 全プレイヤーの画面で音を鳴らす命令
-    [ClientRpc]
-    private void PlaySoundClientRpc(Vector3 soundPosition)
-    {
-        if (dropSound != null)
-        {
-            AudioSource.PlayClipAtPoint(dropSound, soundPosition);
-        }
-    }
-
-    private void ChangeBlock()
-    {
-        isChanged = true;
-
-        // リストに登録された数の分だけ順番に生成する
-        foreach (GameObject prefab in newBlockPrefabs)
-        {
-            if (prefab == null) continue; // 空欄(None)があった場合はスキップする
-
-            // 物理演算で重なって爆発（反発）しないように、少しだけ位置を散らす
-            Vector3 randomOffset = new Vector3(Random.Range(-0.2f, 0.2f), Random.Range(0f, 0.5f), Random.Range(-0.2f, 0.2f));
-            Vector3 spawnPosition = transform.position + randomOffset;
-
-            // 1. 新しいプレハブを少しずらした位置・元の回転で生成する
-            GameObject newBlock = Instantiate(prefab, spawnPosition, transform.rotation);
-
-            // 2. 新しいプレハブをネットワーク上の全プレイヤーに同期（Spawn）する
-            NetworkObject netObj = newBlock.GetComponent<NetworkObject>();
-            if (netObj != null)
-            {
-                netObj.Spawn();
-            }
-        }
-
-        // 3. 自分自身（古いブロック）をネットワークから完全に消去する
-        GetComponent<NetworkObject>().Despawn();
     }
 }

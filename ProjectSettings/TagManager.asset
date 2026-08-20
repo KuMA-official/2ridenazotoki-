@@ -6,6 +6,9 @@ TagManager:
   tags:
   - CinemachineTarget
   - Key_1
+  - Hands
+  - Water
+  - GhostOnly
   layers:
   - Default
   - TransparentFX
@@ -14,8 +17,8 @@ TagManager:
   - Water
   - UI
   - Player
-  - 
-  - 
+  - Ghost
+  - PassableWall
   - 
   - 
   - 

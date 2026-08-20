@@ -1,5 +1,6 @@
+using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
-
 public class RoomLightLayerTrigger : MonoBehaviour
 {
     [Header("切り替えるライト（空欄の場合は進入したプレイヤーの子要素から自動取得）")]
