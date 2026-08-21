@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 2343438778193420485}
   - component: {fileID: 2227199998902342274}
   - component: {fileID: 5103632010868142161}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: playermodel 1 1 1 1 1
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -106,7 +106,7 @@ GameObject:
   - component: {fileID: 2623639367293182298}
   - component: {fileID: 7528459681341694908}
   - component: {fileID: 4065918113066863581}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: head
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -244,7 +244,7 @@ GameObject:
   - component: {fileID: 5710361367835573436}
   - component: {fileID: 5166617463308180582}
   - component: {fileID: 5467740290052543247}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: lefthand
   m_TagString: Hands
   m_Icon: {fileID: 0}
@@ -359,7 +359,7 @@ GameObject:
   - component: {fileID: 984831446973841754}
   - component: {fileID: 748122340792189614}
   - component: {fileID: 8653087455512700728}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: righthand
   m_TagString: Hands
   m_Icon: {fileID: 0}
