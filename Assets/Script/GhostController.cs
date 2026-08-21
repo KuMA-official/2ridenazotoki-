@@ -5,9 +5,6 @@ using UnityEngine;
 
 public class GhostController : NetworkBehaviour
 {
-    [Header("幽霊専用：ヒント本オブジェクト")]
-    [SerializeField] private GameObject ghostBook;
-
     [Header("幽霊の見た目（人間から隠すモデル）")]
     [SerializeField] private Renderer[] ghostRenderers;
 
@@ -44,8 +41,6 @@ public class GhostController : NetworkBehaviour
                 }
             }
         }
-
-        if (ghostBook != null) ghostBook.SetActive(false);
     }
 
     /// <summary>
@@ -96,12 +91,6 @@ public class GhostController : NetworkBehaviour
     {
         if (!IsOwner) return;
 
-        // Bボタン：本
-        if (OVRInput.GetDown(OVRInput.RawButton.B) || Input.GetKeyDown(KeyCode.B))
-        {
-            ToggleGhostBook();
-        }
-
         // Aボタン：実体化
         if (OVRInput.GetDown(OVRInput.RawButton.A) || Input.GetKeyDown(KeyCode.A))
         {
@@ -109,22 +98,6 @@ public class GhostController : NetworkBehaviour
 
             if (physicalCoroutine != null) StopCoroutine(physicalCoroutine);
             physicalCoroutine = StartCoroutine(ActivatePhysicalMode());
-        }
-    }
-
-    private void ToggleGhostBook()
-    {
-        if (ghostBook != null)
-        {
-            ghostBook.SetActive(!ghostBook.activeSelf);
-            
-            // ★詳細なデバッグログを表示
-            Debug.Log($"[bookの状態] 単体のスイッチ: {ghostBook.activeSelf} / 実際の画面表示: {ghostBook.activeInHierarchy}");
-        }
-        else
-        {
-            // ★割当が切れている場合のエラー表示
-            Debug.LogError("★ ghostBook が Inspector で割り当てられていません！");
         }
     }
 

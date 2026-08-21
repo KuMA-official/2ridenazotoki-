@@ -9,20 +9,28 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioClip loopBGM; // またはSE
 
     // ボタンを押すたびに「再生 ⇔ 停止」を交互に切り替える関数
+
     public void ToggleLoopSound()
     {
-        if (loopAudioSource == null || loopBGM == null) return;
+        Debug.Log("★ToggleLoopSoundが呼ばれました！");
 
-        // 再生中なら止める、止まっていれば鳴らす
+        if (loopAudioSource == null || loopBGM == null)
+        {
+            Debug.LogError("★AudioSource か BGM が Null です！");
+            return;
+        }
+
         if (loopAudioSource.isPlaying)
         {
             loopAudioSource.Stop();
+            Debug.Log("★音を停止しました");
         }
         else
         {
             loopAudioSource.clip = loopBGM;
-            loopAudioSource.loop = true; // ループをオン
+            loopAudioSource.loop = true;
             loopAudioSource.Play();
+            Debug.Log("★音を再生しました");
         }
     }
 
