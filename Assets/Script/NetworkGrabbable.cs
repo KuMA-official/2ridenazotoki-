@@ -41,9 +41,11 @@ public class NetworkGrabbable : NetworkBehaviour
     {
         // yield return null は「このフレームの処理はいったん終わり！次のフレームまで待つ！」という命令
         yield return null;
+        yield return null; // ★追加：Meta SDKの処理が完全に終わるのを確実にするため2フレーム待つ
 
         // 1フレーム待ったことでMeta SDKの処理が完全に終わったので、
         // 安全に後出しジャンケンで物理演算（重力）をON（落下開始）に戻す！
+        rb.useGravity = true; // ★追加：重力を確実にONにする
         rb.isKinematic = false;
 
         // サーバーに向かって「手放したよ！」と報告の電話（RPC）をかける
@@ -69,6 +71,7 @@ public class NetworkGrabbable : NetworkBehaviour
     private void ReleaseServerRpc()
     {
         // サーバー側（＝全員の共通ルール）でも、このアイテムの重力をON（落下開始）にする
+        rb.useGravity = true; // ★追加：重力を確実にONにする
         rb.isKinematic = false;
     }
 }
