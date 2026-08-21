@@ -77,6 +77,11 @@ public class Title : MonoBehaviour
             string inputAddress = addressInput != null ? addressInput.text.Trim() : "";
             // もし入力されていればそのIPを、空っぽならテスト用に「127.0.0.1（自分自身）」を接続先に設定する
             transport.ConnectionData.Address = !string.IsNullOrEmpty(inputAddress) ? inputAddress : "127.0.0.1";
+
+            if (myAddressText != null)
+            {
+                myAddressText.text = "Trying to connect:\n" + transport.ConnectionData.Address;
+            }
         }
     }
 
